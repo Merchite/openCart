@@ -1,0 +1,163 @@
+<div id="paynl_payment"></div>
+{% if instructions %}
+    <div class="well well-sm">
+        <p>{{ instructions|nl2br }}</p>
+    </div>
+{% endif %}
+{% if optionSubList %}
+    <div>
+        <select class="form-control" id="optionsub">
+            <option value=''>{{ text_choose_bank }}</option>
+            {% for optionSub in optionSubList %}
+                <option value='{{ optionSub.id }}'>{{ optionSub.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+{% endif %}
+
+<div class="alert alert-danger hidden" id="pay_error"></div>
+
+
+{% if dob %}
+    <script type="text/javascript">var dob = {{ dob }};</script>
+    <div class="form-group">
+        <label for="dob">{{ text_dob }}</label>
+        <div class='input-group date' id='datetimepicker'>
+            <input type='text' class="form-control" id="dob"/>
+            <span class="input-group-addon">
+                <span class="glyphicon glyphicon-calendar"></span>
+            </span>
+        </div>
+    </div>
+    <script type="text/javascript">
+        $(function () {
+            $('#datetimepicker').datetimepicker({
+                format: 'DD/MM/YYYY'
+            });
+        });
+    </script>
+{% else %}
+    <script type="text/javascript">var dob = null;</script>
+{% endif %}
+{% if coc %}
+    <script type="text/javascript">var coc = {{ coc }};</script>
+    <div class="form-group">
+        <label for="coc">{{ text_coc }}</label>
+        <div class='input-group date' id='cocnumber'>
+            <input type='text' class="form-control" id="coc"/>
+            <span class="input-group-addon">
+                <span class="glyphicon glyphicon-asterisk"></span>
+            </span>
+        </div>
+    </div>    
+{% else %}
+    <script type="text/javascript">var coc = null;</script>
+{% endif %}
+{% if vat %}
+    <script type="text/javascript">var vat = {{ vat }};</script>
+    <div class="form-group">
+        <label for="vat">{{ text_vat }}</label>
+        <div class='input-group date' id='vatid'>
+            <input type='text' class="form-control" id="vat"/>
+            <span class="input-group-addon">
+                <span class="glyphicon glyphicon-asterisk"></span>
+            </span>
+        </div>
+    </div>    
+{% else %}
+    <script type="text/javascript">var vat = null;</script>
+{% endif %}
+<div class="buttons">
+    <div class="pull-right">
+        <input onclick="startTransaction();" value="{{ button_confirm }}" type="button"
+               data-loading-text="{{ button_loading }}" id="button-confirm" class="btn btn-primary"/>
+    </div>
+</div>
+
+<script type="text/javascript">
+    function startTransaction() {
+        var data = {};
+        if (jQuery('#optionsub') != undefined) {
+            data.optionSubId = jQuery('#optionsub').val();
+        }
+        switch (dob) {
+            case 1:
+                if (jQuery('#dob') != undefined) {
+                    data.dob = jQuery('#dob').val();
+                }
+                break;
+            case 2:
+                if (jQuery('#dob').val() === '') {
+                    jQuery('#button-confirm').disabled = true;
+                    jQuery('#pay_error').text('{{ error_dob }}');
+                    jQuery('#pay_error').removeClass("hidden");
+                    return;
+                } else {
+                    data.dob = jQuery('#dob').val();
+                }
+                break;
+            default:
+                data.dob = null;
+        }
+        switch (coc) {
+            case 1:
+                if (jQuery('#coc') != undefined) {
+                    data.coc = jQuery('#coc').val();
+                }
+                break;
+            case 2:
+                if (jQuery('#coc').val() === '') {
+                    jQuery('#button-confirm').disabled = true;
+                    jQuery('#pay_error').text('{{ error_coc }}');
+                    jQuery('#pay_error').removeClass("hidden");
+                    return;
+                } else {
+                    data.coc = jQuery('#coc').val();
+                }
+                break;
+            default:
+                data.coc = null;
+        }
+        switch (vat) {
+            case 1:
+                if (jQuery('#vat') != undefined) {
+                    data.vat = jQuery('#vat').val();
+                }
+                break;
+            case 2:
+                if (jQuery('#vat').val() === '') {
+                    jQuery('#button-confirm').disabled = true;
+                    jQuery('#pay_error').text('{{ error_vat }}');
+                    jQuery('#pay_error').removeClass("hidden");
+                    return;
+                } else {
+                    data.vat = jQuery('#vat').val();
+                }
+                break;
+            default:
+                data.vat = null;
+        }
+        jQuery.ajax({
+            url: 'index.php?route=extension/payment/{{ paymentMethodName }}/startTransaction',
+            dataType: 'json',
+            data: data,
+            type: 'POST',
+            beforeSend: function () {
+                $('#button-confirm').button('loading');
+            },
+            complete: function () {
+            },
+            success: function (json) {
+                $('.alert').remove();
+
+                if (json['error']) {
+                    $('#paynl_payment').before('<div class="alert alert-danger">' + json['error'] + '</div>');
+                }
+
+                if (json['success']) {
+                    location = json['success']
+                }
+            }
+        });
+    }
+</script>
